@@ -14,26 +14,29 @@ omega_plot_max = 1e5;
 %solo per visualizzione, pulsazione minima e massima
 
 h_r = 40; % [W/(m^2 C°)] Coefficiente di convezione tra riscaldatore e aria
-A_r = 0.13; % [m^2] Area di scambio termico tra riscaldatore e aria
-c_r = 858.8; % [J/(kg C°)] Calore specifico del riscaldatore
-c_a = 1010; % [J/(kg C°)] Calore specifico dell'aria
-m_r = 1.849; % [kg] Massa del riscaldatore
-m_a = 0.1041; % [kg] Massa dell'aria
-mm_a = 0.2; % [kg/s] Portata massica dell’aria
-T_in = 23; % [C°] Temperatura dell’aria in ingresso (ambiente a temperatura costante)
-k = 2.5*1e-3; % [1/C°] Coefficiente di variazione della resistenza con la temperatura
-x1_e = 190; 
-x2_e = 78;
+A_r=0.13; % [m^2] Area di scambio termico tra riscaldatore e aria
+c_r=858.8; % [J/(kg C°)] Calore specifico del riscaldatore
+c_a=1010; % [J/(kg C°)] Calore specifico dell'aria
+m_r=1.849; % [kg] Massa del riscaldatore
+m_a=0.1041; % [kg] Massa dell'aria
+mm_a=0.2; % [kg/s] Portata massica dell’aria
+T_in=23; % [C°] Temperatura dell’aria in ingresso (ambiente a temperatura costante)
+k=2.5*1e-3; % [1/C°] Coefficiente di variazione della resistenza con la temperatura
+x1_e=190; 
+x2_e=27.1911;
 
 %% Coppia di equilibrio
 x_e = [x1_e;x2_e];
-ue = 859.04; % [W]
+
+
+ue = (h_r*A_r)*(x_e(1) - x_e(2))*(1 + k*x_e(1)); % [W]
 
 %% Funzione di Trasferimento 
 
 A = [(-h_r*A_r)/(m_r*c_r)-(ue*k)/(m_r*c_r*(1+k*x1_e)^2), (h_r*A_r)/(m_r*c_r) ;
      (h_r*A_r)/(m_a*c_a), (-mm_a/m_a)-(h_r*A_r)/(m_a*c_a)];
 B = [1/(m_r*c_r*(1+k*x1_e));0];
+
 
 C = [0 1];
 
@@ -44,10 +47,11 @@ modello=ss(A,B,C,D);
 GG=tf(modello);
 
 bode(GG);
+
 %%G=6.557e-12
  %% ------------------------
-%  s^2 + 1.974 s + 0.006291
-sys=zpk(zero(GG),pole(GG),dcgain(GG));%%forma di Bode
+damp(GG);
+sys=zpk(zero(GG),pole(GG),dcgain(GG));%%forma zeri e poli
 
 %% Specifiche 
 
@@ -59,7 +63,7 @@ DD = 4;
 e_star = 0.0035;
 
 % attenuazione disturbo sull'uscita
-A_d = 46;
+A_d = 48;
 omega_d_min = 0;
 omega_d_MAX = 0.2;
 
@@ -69,20 +73,20 @@ omega_n_min = 1e4;
 omega_n_MAX = 1.5*1e7;
 
 % Sovraelongazione massima e tempo d'assestamento all'1%
-S_star = 13;
-T_star = 0.08;
+S_star = 6;
+T_star = 0.1;
 
 % Margine di fase
 Mf_esp = 45;
 
-%% Diagramma di Bode
+%% Diagramma di Bode della G
 
 figure(1);
 bode(GG,{omega_plot_min,omega_plot_max});
 grid on, zoom on;
 
 
-%% Regolatore statico - proporzionale senza poli nell'origine
+%% Regolatore statico
 
 % valore minimo prescritto per L(0)
 mu_s_error =(DD+WW)/e_star;
@@ -90,6 +94,7 @@ mu_s_dist  = 10^(A_d/20);
 
 % guadagno minimo del regolatore ottenuto come L(0)/G(0)
 G_0 = abs(evalfr(GG,0));
+
 G_omega_d_MAX = abs(evalfr(GG,1j*omega_d_MAX));
 
 
@@ -98,10 +103,8 @@ RR_s = max(mu_s_error/G_0,mu_s_dist/G_omega_d_MAX);
 % Sistema esteso
 GG_e = RR_s*GG;
 
-
-
 %% Diagrammi di Bode di Ge con specifiche
-figure(2);
+figure('Name','Diagrammi di Bode','NumberTitle','off')
 hold on;
 
 % Calcolo specifiche S% => Margine di fase
@@ -128,6 +131,8 @@ patch(Bnd_Ta_x, Bnd_Ta_y,'b','FaceAlpha',0.2,'EdgeAlpha',0);
 
 % Plot Bode con margini di stabilità
 margin(GG_e,{omega_plot_min,omega_plot_max});
+% 
+% return ;
 grid on; zoom on;
 
 
@@ -141,15 +146,16 @@ phi_low = -270; % lower bound per il plot
 
 Bnd_Mf_x = [omega_c_min; omega_c_max; omega_c_max; omega_c_min];
 Bnd_Mf_y = [phi_up; phi_up; phi_low; phi_low];
-patch(Bnd_Mf_x, Bnd_Mf_y,'r','FaceAlpha',0.2,'EdgeAlpha',0);
+patch(Bnd_Mf_x, Bnd_Mf_y,'g','FaceAlpha',0.2,'EdgeAlpha',0);
 
 
 
-Mf_star = Mf_min+5; %%il +5 erve per la robustezza
-omega_c_star = 120; % pulsazione in cui vogliamo attraversamento
 
-mag_omega_c_star = abs(evalfr(GG_e,1j*omega_c_star));
-arg_omega_c_star    = rad2deg(angle(evalfr(GG_e,1j*omega_c_star)));
+Mf_star = Mf_min+5;
+omega_c_star = 120;
+
+mag_omega_c_star = abs(evalfr(GG_e,j*omega_c_star));
+arg_omega_c_star    = rad2deg(angle(evalfr(GG_e,j*omega_c_star)));
 
 M_star = 1/mag_omega_c_star;
 phi_star = Mf_star - 180 - arg_omega_c_star;
@@ -162,6 +168,7 @@ if min(tau,alpha) < 0
     fprintf('Errore: parametri rete anticipatrice negativi');
     return;
 end
+
 s=tf("s");
 R_high_frequency = 1/(1 + s/2e3);
 
@@ -171,9 +178,12 @@ RR = RR_s*RR_d;
 
 LL = RR*GG; % funzione di anello
 
-margin(LL,{omega_plot_min,omega_plot_max});
-mf_att=rad2deg(angle(evalfr(LL,1j*omega_c_star)))+180;
+margin(LL/R_high_frequency,{omega_plot_min,omega_plot_max});
 
+
+margin(LL,{omega_plot_min,omega_plot_max});
+
+mf_att=rad2deg(angle(evalfr(LL,1j*omega_c_star)))+180; % che è questo ??
 
 
 
@@ -251,7 +261,7 @@ y_dd=lsim(SS,dd,tt);
 
 tt = 0:1e-5:2*T_star;
 F = (WW * LL) / (1 + LL);
-
+figure(6)
 [y_ww,t_ww] = step(F,tt);
 y_tot = y_nn + y_dd +y_ww; %importante
 %y_not = y_ww + dd + nn; %% se non commenti questa cosa implode matlab (e il tuo computer con esso)s
@@ -264,12 +274,10 @@ plot(t_ww,y_tot,'b');
 
 
 %%--------------------------------
-figure(3);
+
+grid on, zoom on, hold on;
 
 T_simulation = 2*T_star;
-[y_step,t_step] = step(WW*FF, T_simulation);
-plot(t_step,y_step,'b');
-grid on, zoom on, hold on;
 
 LV = evalfr(WW*FF,0);
 
@@ -281,6 +289,9 @@ patch([T_star,T_simulation,T_simulation,T_star],[LV*(1-0.01),LV*(1-0.01),0,0],'g
 patch([T_star,T_simulation,T_simulation,T_star],[LV*(1+0.01),LV*(1+0.01),LV*2,LV*2],'g','FaceAlpha',0.1,'EdgeAlpha',0.1);
 
 ylim([0,LV*2]);
+
+[y_step,t_step] = step(WW*FF, T_simulation);
+plot(t_step,y_step,'b');
 
 Legend_step = ["Risposta al gradino"; "Vincolo sovraelongazione"; "Vincolo tempo di assestamento"];
 legend(Legend_step);
