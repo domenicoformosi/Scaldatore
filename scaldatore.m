@@ -104,7 +104,7 @@ RR_s = max(mu_s_error/G_0,mu_s_dist/G_omega_d_MAX);
 GG_e = RR_s*GG;
 
 %% Diagrammi di Bode di Ge con specifiche
-figure('Name','Diagrammi di Bode','NumberTitle','off')
+figure('Name','Diagramma di Bode di G_e','NumberTitle','off')
 hold on;
 
 % Calcolo specifiche S% => Margine di fase
@@ -129,14 +129,6 @@ Bnd_Ta_y = [0; 0; -150; -150];
 patch(Bnd_Ta_x, Bnd_Ta_y,'b','FaceAlpha',0.2,'EdgeAlpha',0);
 
 
-% Plot Bode con margini di stabilità
-margin(GG_e,{omega_plot_min,omega_plot_max});
-% 
-% return ;
-grid on; zoom on;
-
-
-
 % Specifiche sovraelongazione (margine di fase)
 omega_c_min = omega_Ta_max;
 omega_c_max = omega_n_min;
@@ -148,6 +140,11 @@ Bnd_Mf_x = [omega_c_min; omega_c_max; omega_c_max; omega_c_min];
 Bnd_Mf_y = [phi_up; phi_up; phi_low; phi_low];
 patch(Bnd_Mf_x, Bnd_Mf_y,'g','FaceAlpha',0.2,'EdgeAlpha',0);
 
+% Plot Bode G_e con margini di stabilità
+margin(GG_e,{omega_plot_min,omega_plot_max});
+
+
+grid on; zoom on;
 
 
 
@@ -177,11 +174,25 @@ RR_d = (1 + tau*s)/(1 + alpha * tau*s)*R_high_frequency;
 RR = RR_s*RR_d;
 
 LL = RR*GG; % funzione di anello
-
+% plot funzione ad anello senza polo ad hf
+figure('Name','Diagramma di Bode di L senza polo','NumberTitle','off')
+hold on;
+patch(Bnd_d_x, Bnd_d_y,'r','FaceAlpha',0.2,'EdgeAlpha',0);
+patch(Bnd_n_x, Bnd_n_y,'g','FaceAlpha',0.2,'EdgeAlpha',0);
+patch(Bnd_Ta_x, Bnd_Ta_y,'b','FaceAlpha',0.2,'EdgeAlpha',0);
 margin(LL/R_high_frequency,{omega_plot_min,omega_plot_max});
-
-
+patch(Bnd_Mf_x, Bnd_Mf_y,'r','FaceAlpha',0.2,'EdgeAlpha',0);
+grid on; zoom on;
+% plot funzione ad anello con polo ad hf
+figure('Name','Diagramma di Bode di L con polo','NumberTitle','off');
+hold on;
+patch(Bnd_d_x, Bnd_d_y,'r','FaceAlpha',0.2,'EdgeAlpha',0);
+patch(Bnd_n_x, Bnd_n_y,'g','FaceAlpha',0.2,'EdgeAlpha',0);
+patch(Bnd_Ta_x, Bnd_Ta_y,'b','FaceAlpha',0.2,'EdgeAlpha',0);
 margin(LL,{omega_plot_min,omega_plot_max});
+patch(Bnd_Mf_x, Bnd_Mf_y,'r','FaceAlpha',0.2,'EdgeAlpha',0);
+grid on; zoom on;
+
 
 mf_att=rad2deg(angle(evalfr(LL,1j*omega_c_star)))+180; % che è questo ??
 
