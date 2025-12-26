@@ -73,8 +73,8 @@ omega_n_min = 1e4;
 omega_n_MAX = 1.5*1e7;
 
 % Sovraelongazione massima e tempo d'assestamento all'1%
-S_star = 6;
-T_star = 0.1;
+S_star = 13;
+T_star = 0.08;
 
 % Margine di fase
 Mf_esp = 45;
